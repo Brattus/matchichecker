@@ -43,12 +43,14 @@ app.get('/', async (req, res) => {
         id: ($(this).find("td:first").find('strong').text() + $(this).find("td:first").find('small').text()).trim().replace(/\s/g, ''),
       }
     }).toArray();
+
+    let filePath = '/tmp/occasions.json';
     
     // Check if occasions.json exists
     // If it does, read it and compare with the new id from occasions if the number is under 12
     // Skip if id already exists
     // If it doesn't, create it and write the new id to it
-    if (fs.existsSync('occasions.json')) {
+    if (fs.existsSync(filePath)) {
       const data = fs.readFileSync('occasions.json');
       const json = JSON.parse(data);
       //delete content of occasions.json
@@ -59,7 +61,7 @@ app.get('/', async (req, res) => {
         }
       }
       
-     fs.writeFileSync('occasions.json', JSON.stringify([]));
+     fs.writeFileSync(filePath, JSON.stringify([]));
       for (let i = 0; i < occasions.length; i++) {
 
         if (occasions[i].number < 13) {
@@ -69,7 +71,7 @@ app.get('/', async (req, res) => {
           }
         }
       }
-      fs.writeFileSync('occasions.json', JSON.stringify(json));
+      fs.writeFileSync(filePath, JSON.stringify(json));
     } else {
       const json = [];
       for (let i = 0; i < occasions.length; i++) {
@@ -78,7 +80,7 @@ app.get('/', async (req, res) => {
           json.push(occasions[i].id);
         }
       }
-      fs.writeFileSync('occasions.json', JSON.stringify(json));
+      fs.writeFileSync(filePath, JSON.stringify(json));
     }
 
 
