@@ -18,15 +18,15 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
-app.get('/', async (req, res) => {
+// app.get('/', async (req, res) => {
   
-  res.json({
-    message: '🦄🌈✨👋🌎🌍🌏✨🌈🦄',
-  });
-});
+//   res.json({
+//     message: '🦄🌈✨👋🌎🌍🌏✨🌈🦄',
+//   });
+// });
 
 
-app.get('/matchicheck', async (req, res) => {
+app.get('/', async (req, res) => {
   const url = "https://www.matchi.se/facilities/ipvoldahallen";
   //use local file for testing
   let occasions = [];
