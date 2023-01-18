@@ -51,7 +51,7 @@ app.get('/', async (req, res) => {
     // Skip if id already exists
     // If it doesn't, create it and write the new id to it
     if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync('occasions.json');
+      const data = fs.readFileSync(filePath);
       const json = JSON.parse(data);
       //delete content of occasions.json
               //if the id is  in the json file and not in occasions.json, remove the id from json object
