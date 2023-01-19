@@ -19,7 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 // app.get('/', async (req, res) => {
-  
+
 //   res.json({
 //     message: '🦄🌈✨👋🌎🌍🌏✨🌈🦄',
 //   });
@@ -28,10 +28,8 @@ app.use(express.json());
 
 app.get('/', async (req, res) => {
   const url = "https://www.matchi.se/facilities/ipvoldahallen";
-  //use local file for testing
-  let occasions = [];
-  let newOccasion = false;
-  axios(url).then((response) => {
+  var newOccasion = false;
+  axios(url).then(async (response) => {
     const html_data = response.data;
     const $ = cheerio.load(html_data);
 
@@ -44,56 +42,102 @@ app.get('/', async (req, res) => {
       }
     }).toArray();
 
-    let filePath = '/tmp/occasions.json';
-    
-    // Check if occasions.json exists
-    // If it does, read it and compare with the new id from occasions if the number is under 12
-    // Skip if id already exists
-    // If it doesn't, create it and write the new id to it
-    if (fs.existsSync(filePath)) {
-      const data = fs.readFileSync(filePath);
-      const json = JSON.parse(data);
-      //delete content of occasions.json
-              //if the id is  in the json file and not in occasions.json, remove the id from json object
-      for (let i = 0; i < json.length; i++) {
-        if (!occasions.map(occasion => occasion.id).includes(json[i])) {
-          json.splice(i, 1);
-        }
-      }
-      
-     fs.writeFileSync(filePath, JSON.stringify([]));
-      for (let i = 0; i < occasions.length; i++) {
+    // make an array of all the occasions that are less than 12 number of people named possibleOccasions
+    const possibleOccasions = occasions.filter(occasion => occasion.number < 13);
 
-        if (occasions[i].number < 13) {
-          if (!json.includes(occasions[i].id)) {
+    console.log(possibleOccasions);
+
+    // Check if possibleOccaions exists in airtable already
+    // If it does not exist, add it to airtable
+    // If it does exist, do nothing
+    // If possibleOccasions is empty, do nothing
+    if (possibleOccasions.length > 0) {
+
+      //get all occasions from airtable
+      const url = "https://api.airtable.com/v0/appw91HSIZHn8hxIs/Occasions";
+      const config = {
+        headers: {
+          Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+      };
+
+
+      let airtableOccasions = [];
+      airtableOccasions = await getCurrentIds(url, config);
+
+      console.log("AIRTABLE OCCASIONS", airtableOccasions);
+
+
+
+
+      for (let i = 0; i < possibleOccasions.length; i++) {
+        console.log("Occasion id", possibleOccasions[i].id);
+
+        //if the occasion is not in airtable, add it to airtable
+        if (airtableOccasions.includes(possibleOccasions[i].id)) {
+          console.log("Occasion already exists in airtable");
+        }
+        else {
+
+          console.log("Occasion does not exist in airtable");
+          //add occasion-id to body and post it to airtable
+
+          const body = {
+            "records": [
+              {
+                "fields": {
+                  "OccasionId": possibleOccasions[i].id,
+                  "Date": possibleOccasions[i].date,
+                }
+              }
+            ]
+          };
+
+          console.log('body', body);
+
+          let madeItToAirtable = addOccasionToAirtable (url, config, body);
+          if(madeItToAirtable){
             newOccasion = true;
-            json.push(occasions[i].id);
           }
         }
       }
-      fs.writeFileSync(filePath, JSON.stringify(json));
-    } else {
-      const json = [];
-      for (let i = 0; i < occasions.length; i++) {
-        if (occasions[i].number < 13) {
-          newOccasion = true;
-          json.push(occasions[i].id);
-        }
-      }
-      fs.writeFileSync(filePath, JSON.stringify(json));
+
+    }
+    else {
+      console.log("No occasions available");
     }
 
 
-    //Send the response
-
-
-
-    
     res.send(newOccasion);
     // res.send(occasions);
   });
-  
+
 });
+
+async function getCurrentIds(url, config) {
+  try {
+    let airtableOccasions = [];
+    const response = await axios.get(url, config);
+    console.log("AIRTABLE OCCASIONS", response.data.records);
+    response.data.records.forEach(occasion => {
+      airtableOccasions.push(occasion.fields.OccasionId);
+    });
+    return airtableOccasions;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function addOccasionToAirtable(url, config, body) {
+  try {
+    const response = await axios.post(url, body, config);
+    console.log("NEW OCCASION ADDED TO AIRTABLE");
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
 
 app.use('/api/v1', api);
 
