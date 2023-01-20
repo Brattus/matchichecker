@@ -43,7 +43,7 @@ app.get('/', async (req, res) => {
     }).toArray();
 
     // make an array of all the occasions that are less than 12 number of people named possibleOccasions
-    const possibleOccasions = occasions.filter(occasion => occasion.number < 13);
+    const possibleOccasions = occasions.filter(occasion => occasion.number < 12);
 
     console.log(possibleOccasions);
 
